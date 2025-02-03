@@ -1,167 +1,225 @@
-import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.GridPane;
-import javafx.scene.image.ImageView;
-import javafx.scene.image.Image;
-import javafx.stage.Stage;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.paint.Color;
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import org.json.*;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import org.json.JSONObject;
-import org.json.JSONArray;
+public class DJA extends JFrame {
+    private static final String MARKETPLACE_URL = "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/main/code/apps.json";
+    private JPanel installedAppsPanel;
+    private JPanel marketplacePanel;
 
-public class DJA extends Application {
-    private static final String MARKETPLACE_URL = "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/refs/heads/main/code/apps.json";
-    private VBox installedAppsContainer;
-    private VBox marketplaceContainer;
+    public DJA() {
+        setTitle("DRAGE Java Apps");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(800, 600);
+        setLocationRelativeTo(null);
 
-    @Override
-    public void start(Stage primaryStage) {
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #f0f0f0;");
+        // Set modern look and feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        // Header
-        HBox header = createHeader();
-        root.setTop(header);
+        // Create main layout
+        setLayout(new BorderLayout());
 
-        // Main content
-        VBox mainContent = new VBox(20);
-        mainContent.setPadding(new Insets(20));
+        // Create header
+        JPanel header = createHeader();
+        add(header, BorderLayout.NORTH);
 
-        // Installed Apps Section
-        Label installedAppsLabel = new Label("Installed Apps");
-        installedAppsLabel.setFont(Font.font("System", FontWeight.BOLD, 20));
+        // Create main content
+        JTabbedPane tabbedPane = new JTabbedPane();
         
-        installedAppsContainer = new VBox(10);
-        ScrollPane installedAppsScroll = new ScrollPane(installedAppsContainer);
-        installedAppsScroll.setFitToWidth(true);
-        installedAppsScroll.setStyle("-fx-background: #f0f0f0; -fx-background-color: transparent;");
+        // Installed Apps Panel
+        installedAppsPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        installedAppsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JScrollPane installedScroll = new JScrollPane(installedAppsPanel);
+        tabbedPane.addTab("Installed Apps", installedScroll);
 
-        // Marketplace Section
-        Label marketplaceLabel = new Label("Marketplace");
-        marketplaceLabel.setFont(Font.font("System", FontWeight.BOLD, 20));
-        
-        marketplaceContainer = new VBox(10);
-        ScrollPane marketplaceScroll = new ScrollPane(marketplaceContainer);
-        marketplaceScroll.setFitToWidth(true);
-        marketplaceScroll.setStyle("-fx-background: #f0f0f0; -fx-background-color: transparent;");
+        // Marketplace Panel
+        marketplacePanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        marketplacePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JScrollPane marketplaceScroll = new JScrollPane(marketplacePanel);
+        tabbedPane.addTab("Marketplace", marketplaceScroll);
 
-        mainContent.getChildren().addAll(
-            installedAppsLabel, 
-            installedAppsScroll,
-            marketplaceLabel,
-            marketplaceScroll
-        );
-
-        root.setCenter(mainContent);
+        add(tabbedPane, BorderLayout.CENTER);
 
         // Load marketplace apps
         loadMarketplaceApps();
+        loadInstalledApps();
 
-        Scene scene = new Scene(root, 800, 600);
-        primaryStage.setTitle("DRAGE Java Apps");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        setVisible(true);
     }
 
-    private HBox createHeader() {
-        HBox header = new HBox();
-        header.setStyle("-fx-background-color: #2196f3; -fx-padding: 15px;");
-        
-        Label title = new Label("DRAGE Java Apps");
-        title.setFont(Font.font("System", FontWeight.BOLD, 24));
-        title.setTextFill(Color.WHITE);
-        
-        Button refreshButton = new Button("Refresh Marketplace");
-        refreshButton.setStyle("-fx-background-color: white; -fx-text-fill: #2196f3;");
-        refreshButton.setOnAction(e -> loadMarketplaceApps());
-        
-        header.getChildren().addAll(title, refreshButton);
-        header.setSpacing(20);
-        
+    private JPanel createHeader() {
+        JPanel header = new JPanel();
+        header.setBackground(new Color(33, 150, 243));
+        header.setLayout(new BorderLayout());
+        header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JLabel title = new JLabel("DRAGE Java Apps");
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setForeground(Color.WHITE);
+        header.add(title, BorderLayout.WEST);
+
+        JButton refreshButton = new JButton("Refresh");
+        refreshButton.addActionListener(e -> loadMarketplaceApps());
+        header.add(refreshButton, BorderLayout.EAST);
+
         return header;
     }
 
     private void loadMarketplaceApps() {
-        marketplaceContainer.getChildren().clear();
+        marketplacePanel.removeAll();
         
         try {
             URL url = new URL(MARKETPLACE_URL);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-            StringBuilder jsonContent = new StringBuilder();
-            String line;
-            
-            while ((line = reader.readLine()) != null) {
-                jsonContent.append(line);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                StringBuilder jsonContent = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonContent.append(line);
+                }
+                
+                JSONObject json = new JSONObject(jsonContent.toString());
+                JSONArray apps = json.getJSONArray("apps");
+                
+                for (int i = 0; i < apps.length(); i++) {
+                    JSONObject app = apps.getJSONObject(i);
+                    addAppToMarketplace(app);
+                }
             }
-            
-            JSONObject json = new JSONObject(jsonContent.toString());
-            JSONArray apps = json.getJSONArray("apps");
-            
-            for (int i = 0; i < apps.length(); i++) {
-                JSONObject app = apps.getJSONObject(i);
-                addAppToMarketplace(app);
-            }
-            
         } catch (Exception e) {
-            Label errorLabel = new Label("Error loading marketplace: " + e.getMessage());
-            errorLabel.setTextFill(Color.RED);
-            marketplaceContainer.getChildren().add(errorLabel);
+            JOptionPane.showMessageDialog(this, 
+                "Error loading marketplace: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
+        
+        marketplacePanel.revalidate();
+        marketplacePanel.repaint();
     }
 
     private void addAppToMarketplace(JSONObject app) {
-        HBox appContainer = new HBox(15);
-        appContainer.setStyle("-fx-background-color: white; -fx-padding: 10px; -fx-background-radius: 5px;");
+        JPanel appPanel = new JPanel();
+        appPanel.setLayout(new BorderLayout(10, 10));
+        appPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        // App info panel
+        JPanel infoPanel = new JPanel(new GridLayout(4, 1, 5, 5));
+        JLabel nameLabel = new JLabel(app.getString("name"));
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        JLabel descLabel = new JLabel(app.getString("description"));
+        JLabel versionLabel = new JLabel("Version: " + app.getString("version"));
+        JLabel authorLabel = new JLabel("By: " + app.getString("author"));
         
-        try {
-            // App Icon
-            ImageView icon = new ImageView(new Image(app.getString("icon")));
-            icon.setFitHeight(50);
-            icon.setFitWidth(50);
-            
-            // App Info
-            VBox appInfo = new VBox(5);
-            Label nameLabel = new Label(app.getString("name"));
-            nameLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
-            Label descLabel = new Label(app.getString("description"));
-            Label versionLabel = new Label("Version: " + app.getString("version"));
-            Label authorLabel = new Label("By: " + app.getString("author"));
-            
-            appInfo.getChildren().addAll(nameLabel, descLabel, versionLabel, authorLabel);
-            
-            // Install Button
-            Button installButton = new Button("Install");
-            installButton.setStyle("-fx-background-color: #2196f3; -fx-text-fill: white;");
-            installButton.setOnAction(e -> installApp(app));
-            
-            appContainer.getChildren().addAll(icon, appInfo, installButton);
-            marketplaceContainer.getChildren().add(appContainer);
-            
-        } catch (Exception e) {
-            System.err.println("Error adding app to marketplace: " + e.getMessage());
+        infoPanel.add(nameLabel);
+        infoPanel.add(descLabel);
+        infoPanel.add(versionLabel);
+        infoPanel.add(authorLabel);
+
+        // Install button
+        JButton installButton = new JButton("Install");
+        installButton.addActionListener(e -> installApp(app));
+
+        appPanel.add(infoPanel, BorderLayout.CENTER);
+        appPanel.add(installButton, BorderLayout.SOUTH);
+
+        marketplacePanel.add(appPanel);
+    }
+
+    private void loadInstalledApps() {
+        installedAppsPanel.removeAll();
+        File appsDir = new File("installed_apps");
+        
+        if (appsDir.exists() && appsDir.isDirectory()) {
+            File[] files = appsDir.listFiles((dir, name) -> name.endsWith(".jar"));
+            if (files != null) {
+                for (File file : files) {
+                    addInstalledApp(file);
+                }
+            }
         }
+        
+        installedAppsPanel.revalidate();
+        installedAppsPanel.repaint();
+    }
+
+    private void addInstalledApp(File appFile) {
+        JPanel appPanel = new JPanel();
+        appPanel.setLayout(new BorderLayout(10, 10));
+        appPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        JLabel nameLabel = new JLabel(appFile.getName().replace(".jar", ""));
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+
+        JButton launchButton = new JButton("Launch");
+        launchButton.addActionListener(e -> launchApp(appFile));
+
+        appPanel.add(nameLabel, BorderLayout.CENTER);
+        appPanel.add(launchButton, BorderLayout.SOUTH);
+
+        installedAppsPanel.add(appPanel);
     }
 
     private void installApp(JSONObject app) {
-        // TODO: Implement installation logic
-        System.out.println("Installing app: " + app.getString("name"));
+        try {
+            String appUrl = app.getString("url");
+            String appName = app.getString("name").replaceAll("\\s+", "") + ".jar";
+            
+            File appsDir = new File("installed_apps");
+            if (!appsDir.exists()) {
+                appsDir.mkdirs();
+            }
+
+            File outputFile = new File(appsDir, appName);
+            
+            // Download the app
+            try (BufferedInputStream in = new BufferedInputStream(new URL(appUrl).openStream());
+                 FileOutputStream out = new FileOutputStream(outputFile)) {
+                byte[] buffer = new byte[1024];
+                int count;
+                while ((count = in.read(buffer, 0, 1024)) != -1) {
+                    out.write(buffer, 0, count);
+                }
+            }
+
+            JOptionPane.showMessageDialog(this, 
+                "App installed successfully!",
+                "Installation Complete",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            loadInstalledApps();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Error installing app: " + e.getMessage(),
+                "Installation Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void launchApp(File appFile) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("java", "-jar", appFile.getAbsolutePath());
+            pb.start();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Error launching app: " + e.getMessage(),
+                "Launch Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public static void main(String[] args) {
-        launch(args);
+        SwingUtilities.invokeLater(() -> new DJA());
     }
 }
