@@ -7,7 +7,8 @@
             "description": "RedMPanning is a tool that allows you to pan and zoom in on a map.",
             "version": "1.101",
             "author": "DRAGEno01",
-            "install": true
+            "install": true,
+            "delete": false
         }
     ]
 }
