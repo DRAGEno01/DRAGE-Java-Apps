@@ -1,0 +1,13 @@
+{
+    "apps": [
+        {
+            "name": "RedMPanning",
+            "url": "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/refs/heads/main/code/apps/RedMPanning.java",
+            "icon": "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/refs/heads/main/code/apps/RedMPanning.png",
+            "description": "RedMPanning is a tool that allows you to pan and zoom in on a map.",
+            "version": "1.101",
+            "author": "DRAGEno01",
+            "install": true
+        }
+    ]
+}
