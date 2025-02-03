@@ -5,16 +5,20 @@ import java.net.*;
 import java.util.*;
 import org.json.*;
 import java.nio.file.*;
+import javax.swing.border.AbstractBorder;
 
 public class DJA extends JFrame {
     private static final String MARKETPLACE_URL = "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/main/code/apps.json";
     private JPanel installedAppsPanel;
     private JPanel marketplacePanel;
-    private Color primaryColor = new Color(25, 118, 210);
-    private Color accentColor = new Color(66, 165, 245);
-    private Color backgroundColor = new Color(245, 245, 245);
-    private Font titleFont = new Font("Segoe UI", Font.BOLD, 24);
-    private Font headerFont = new Font("Segoe UI", Font.BOLD, 18);
+    private Color primaryColor = new Color(63, 81, 181);    // Material Indigo
+    private Color accentColor = new Color(92, 107, 192);    // Lighter Indigo
+    private Color buttonColor = new Color(48, 63, 159);     // Darker Indigo for buttons
+    private Color backgroundColor = new Color(250, 250, 250);
+    private Color cardColor = Color.WHITE;
+    private Color textColor = new Color(33, 33, 33);
+    private Font titleFont = new Font("Segoe UI", Font.BOLD, 28);
+    private Font headerFont = new Font("Segoe UI", Font.BOLD, 20);
     private Font normalFont = new Font("Segoe UI", Font.PLAIN, 14);
 
     public DJA() {
@@ -74,16 +78,13 @@ public class DJA extends JFrame {
         JPanel header = new JPanel();
         header.setLayout(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
-        
-        // Create gradient background
-        header.setOpaque(false);
-        header.setBackground(new Color(0, 0, 0, 0));
+        header.setBackground(primaryColor);  // Set background color
         
         // Add logo and title
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(primaryColor);  // Match header background
         
-        JLabel logoLabel = new JLabel("🚀");
+        JLabel logoLabel = new JLabel("⚡");
         logoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 32));
         logoLabel.setForeground(Color.WHITE);
         
@@ -94,8 +95,10 @@ public class DJA extends JFrame {
         titlePanel.add(logoLabel);
         titlePanel.add(title);
         
-        // Create refresh button with animation
+        // Wider refresh button
         JButton refreshButton = new JGradientButton("⟳ Refresh");
+        refreshButton.setPreferredSize(new Dimension(150, 45));  // Set fixed width
+        refreshButton.addActionListener(e -> loadMarketplaceApps());
         
         header.add(titlePanel, BorderLayout.WEST);
         header.add(refreshButton, BorderLayout.EAST);
@@ -150,78 +153,73 @@ public class DJA extends JFrame {
 
     private void addAppToMarketplace(JSONObject app) {
         JPanel appPanel = new JPanel();
-        appPanel.setLayout(new BorderLayout(15, 15));
-        appPanel.setBackground(Color.WHITE);
+        appPanel.setLayout(new BorderLayout(20, 15));
+        appPanel.setBackground(cardColor);
         
-        // Create a modern card effect with shadow
+        // Enhanced shadow and rounded corners
         appPanel.setBorder(BorderFactory.createCompoundBorder(
-            new ShadowBorder(),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            new ShadowBorder(10, 0.2f),
+            BorderFactory.createEmptyBorder(25, 25, 25, 25)
         ));
 
-        // App info panel with better layout
-        JPanel infoPanel = new JPanel();
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setBackground(Color.WHITE);
+        // App header
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        headerPanel.setBackground(cardColor);
         
-        // App name with icon
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        headerPanel.setBackground(Color.WHITE);
-        
-        JLabel iconLabel = new JLabel("🔮");
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-        
-        JLabel nameLabel = new JLabel(app.getString("name"));
+        String cleanName = app.getString("name").replaceAll("\\s+", " ").trim();
+        JLabel nameLabel = new JLabel(cleanName);
         nameLabel.setFont(headerFont);
         nameLabel.setForeground(primaryColor);
         
-        headerPanel.add(iconLabel);
         headerPanel.add(nameLabel);
-        
-        // Description with custom styling
-        JTextArea descLabel = new JTextArea(app.getString("description"));
+
+        // Description panel
+        JTextArea descLabel = new JTextArea(app.getString("description").replaceAll("\\[|\\]|\\s+", " ").trim());
         descLabel.setFont(normalFont);
         descLabel.setLineWrap(true);
         descLabel.setWrapStyleWord(true);
         descLabel.setEditable(false);
-        descLabel.setBackground(Color.WHITE);
-        descLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        descLabel.setBackground(cardColor);
+        descLabel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        descLabel.setForeground(textColor);
+
+        // Details panel
+        JPanel detailsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        detailsPanel.setBackground(cardColor);
         
-        // Version and author info with icons
-        JPanel detailsPanel = new JPanel(new GridLayout(2, 1, 5, 5));
-        detailsPanel.setBackground(Color.WHITE);
-        
-        JLabel versionLabel = new JLabel("📦 Version: " + app.getString("version"));
+        JLabel versionLabel = new JLabel("Version " + app.getString("version").trim());
         versionLabel.setFont(normalFont);
+        versionLabel.setForeground(new Color(100, 100, 100));
         
-        JLabel authorLabel = new JLabel("👤 By: " + app.getString("author"));
+        JLabel authorLabel = new JLabel("By " + app.getString("author").trim());
         authorLabel.setFont(normalFont);
+        authorLabel.setForeground(new Color(100, 100, 100));
         
         detailsPanel.add(versionLabel);
         detailsPanel.add(authorLabel);
 
-        // Add all components to info panel
-        infoPanel.add(headerPanel);
-        infoPanel.add(descLabel);
-        infoPanel.add(Box.createVerticalStrut(10));
-        infoPanel.add(detailsPanel);
+        // Content Panel
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(cardColor);
+        contentPanel.add(headerPanel);
+        contentPanel.add(descLabel);
+        contentPanel.add(detailsPanel);
 
-        // Create a gradient install button
-        JButton installButton = new JGradientButton("Install");
-        installButton.setFont(normalFont);
+        // Install button
+        JButton installButton = new JGradientButton("INSTALL");
+        installButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         installButton.addActionListener(e -> installApp(app));
 
-        // Add components to main panel
-        appPanel.add(infoPanel, BorderLayout.CENTER);
+        appPanel.add(contentPanel, BorderLayout.CENTER);
         appPanel.add(installButton, BorderLayout.SOUTH);
 
-        // Add to marketplace with GridBagConstraints
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = GridBagConstraints.RELATIVE;
         gbc.gridy = GridBagConstraints.RELATIVE;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 0.5;
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(15, 15, 15, 15);
 
         marketplacePanel.add(appPanel, gbc);
     }
@@ -235,7 +233,13 @@ public class DJA extends JFrame {
         try {
             URL url = new URL(MARKETPLACE_URL);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-                JSONObject json = new JSONObject(reader.readLine());
+                StringBuilder jsonContent = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonContent.append(line);
+                }
+                
+                JSONObject json = new JSONObject(jsonContent.toString());
                 JSONArray apps = json.getJSONArray("apps");
                 for (int i = 0; i < apps.length(); i++) {
                     JSONObject app = apps.getJSONObject(i);
@@ -284,7 +288,7 @@ public class DJA extends JFrame {
         appPanel.setLayout(new BorderLayout(15, 15));
         appPanel.setBackground(Color.WHITE);
         appPanel.setBorder(BorderFactory.createCompoundBorder(
-            new ShadowBorder(),
+            new ShadowBorder(10, 0.2f),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
@@ -349,9 +353,9 @@ public class DJA extends JFrame {
 
     private void installApp(JSONObject app) {
         try {
-            String appName = app.getString("name");
+            String appName = app.getString("name").replaceAll("\\s+", " ").trim();
             String appUrl = app.getString("url");
-            String version = app.getString("version");
+            String version = app.getString("version").trim();
             
             if (appName.equals("DJA")) {
                 updateDashboard(appUrl);
@@ -366,6 +370,7 @@ public class DJA extends JFrame {
 
             loadInstalledApps();
         } catch (Exception e) {
+            e.printStackTrace();  // Print the full error stack trace
             JOptionPane.showMessageDialog(this, 
                 "Error installing app: " + e.getMessage(),
                 "Installation Error",
@@ -374,32 +379,54 @@ public class DJA extends JFrame {
     }
 
     private void updateDashboard(String url) throws Exception {
-        // Download new DJA.java
-        File tempFile = new File("src/DJA.java.new");
-        downloadFile(url, tempFile);
+        try {
+            // Create src directory if it doesn't exist
+            File srcDir = new File("src");
+            if (!srcDir.exists()) {
+                srcDir.mkdirs();
+            }
 
-        // Compile to test if it works
-        ProcessBuilder pb = new ProcessBuilder("javac", "-cp", "lib/json.jar", tempFile.getAbsolutePath());
-        Process p = pb.start();
-        if (p.waitFor() == 0) {
-            // Compilation successful, replace old file
-            File currentFile = new File("src/DJA.java");
-            Files.move(tempFile.toPath(), currentFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            
-            // Recompile in place
-            pb = new ProcessBuilder("javac", "-cp", "lib/json.jar", currentFile.getAbsolutePath());
-            pb.start().waitFor();
+            // Download new DJA.java
+            File tempFile = new File("src/DJA.java.new");
+            downloadFile(url, tempFile);
 
-            // Restart application
-            JOptionPane.showMessageDialog(this, 
-                "Dashboard updated successfully! The application will now restart.",
-                "Update Complete",
-                JOptionPane.INFORMATION_MESSAGE);
+            // Get absolute paths
+            File jsonJar = new File("lib/json.jar").getAbsoluteFile();
             
-            restartApplication();
-        } else {
-            tempFile.delete();
-            throw new Exception("Failed to compile new version");
+            // Compile with proper paths
+            String[] command = {
+                "javac",
+                "-cp",
+                jsonJar.getAbsolutePath(),
+                tempFile.getAbsolutePath()
+            };
+            
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            
+            // Capture the compiler output
+            StringBuilder output = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    output.append(line).append("\n");
+                    System.out.println("Compiler output: " + line);
+                }
+            }
+
+            int result = p.waitFor();
+            if (result == 0) {
+                File currentFile = new File("src/DJA.java");
+                Files.move(tempFile.toPath(), currentFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                restartApplication();
+            } else {
+                tempFile.delete();
+                throw new Exception("Compilation failed:\n" + output.toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
     }
 
@@ -466,7 +493,7 @@ public class DJA extends JFrame {
             setBorderPainted(false);
             setForeground(Color.WHITE);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(getPreferredSize().width, 40));
+            setPreferredSize(new Dimension(getPreferredSize().width, 45));
         }
 
         @Override
@@ -474,13 +501,15 @@ public class DJA extends JFrame {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            GradientPaint gradient = new GradientPaint(
-                0, 0, accentColor,
-                getWidth(), getHeight(), primaryColor
-            );
-            g2.setPaint(gradient);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            if (getModel().isPressed()) {
+                g2.setPaint(buttonColor.darker());
+            } else if (getModel().isRollover()) {
+                g2.setPaint(accentColor);
+            } else {
+                g2.setPaint(buttonColor);
+            }
             
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
             super.paintComponent(g2);
             g2.dispose();
         }
@@ -488,25 +517,33 @@ public class DJA extends JFrame {
 
     // Custom shadow border class
     private class ShadowBorder extends AbstractBorder {
+        private final int shadowSize;
+        private final float shadowOpacity;
+
+        public ShadowBorder(int size, float opacity) {
+            this.shadowSize = size;
+            this.shadowOpacity = opacity;
+        }
+
         @Override
         public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            int shadow = 3;
-            for (int i = 0; i < shadow; i++) {
-                g2.setColor(new Color(0, 0, 0, 20 - i * 6));
-                g2.drawRoundRect(x + i, y + i, width - i * 2 - 1, height - i * 2 - 1, 15, 15);
+            for (int i = 0; i < shadowSize; i++) {
+                float opacity = shadowOpacity * (shadowSize - i) / shadowSize;
+                g2.setColor(new Color(0, 0, 0, (int)(opacity * 255)));
+                g2.drawRoundRect(x + i, y + i, width - i * 2 - 1, height - i * 2 - 1, 20, 20);
             }
             
-            g2.setColor(new Color(224, 224, 224));
-            g2.drawRoundRect(x, y, width - 1, height - 1, 15, 15);
+            g2.setColor(cardColor);
+            g2.fillRoundRect(x, y, width - 1, height - 1, 20, 20);
             g2.dispose();
         }
 
         @Override
         public Insets getBorderInsets(Component c) {
-            return new Insets(4, 4, 4, 4);
+            return new Insets(shadowSize, shadowSize, shadowSize, shadowSize);
         }
     }
 
