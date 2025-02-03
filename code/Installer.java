@@ -3,32 +3,66 @@ import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
-import java.util.zip.*;
 
 public class Installer extends JFrame {
     private JProgressBar progressBar;
     private JLabel statusLabel;
-    private static final String MAVEN_URL = "https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip";
-    private static final String JAVAFX_SDK_URL = "https://download2.gluonhq.com/openjfx/17.0.2/openjfx-17.0.2_windows-x64_bin-sdk.zip";
-    private static final String DASHBOARD_URL = "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/refs/heads/main/code/DRAGE%20Java%20Apps.java";
+    private static final String JSON_LIB_URL = "https://repo1.maven.org/maven2/org/json/json/20231013/json-20231013.jar";
+    private static final String DASHBOARD_URL = "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/main/code/DJA.java";
 
     public Installer() {
         setTitle("DRAGE Java Apps Installer");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(500, 150);
+        setSize(600, 250);
         setLocationRelativeTo(null);
+        setResizable(false);
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Set modern look and feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
+        // Main panel with padding
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
+        mainPanel.setBackground(Color.WHITE);
+
+        // Title
+        JLabel titleLabel = new JLabel("Installing DRAGE Java Apps");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Status label with custom font
         statusLabel = new JLabel("Starting installation...");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        statusLabel.setForeground(new Color(100, 100, 100));
+        statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(statusLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        // Custom progress bar
         progressBar = new JProgressBar(0, 100);
+        progressBar.setPreferredSize(new Dimension(550, 25));
+        progressBar.setMaximumSize(new Dimension(550, 25));
         progressBar.setStringPainted(true);
+        progressBar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        progressBar.setForeground(new Color(46, 204, 113));
+        progressBar.setBackground(new Color(240, 240, 240));
+        progressBar.setBorderPainted(false);
+        mainPanel.add(progressBar);
 
-        mainPanel.add(statusLabel, BorderLayout.NORTH);
-        mainPanel.add(progressBar, BorderLayout.CENTER);
+        // Add shadow border to main window
+        getRootPane().setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
 
-        add(mainPanel);
+        setContentPane(mainPanel);
         setVisible(true);
         
         startInstallation();
@@ -40,36 +74,28 @@ public class Installer extends JFrame {
             protected Void doInBackground() throws Exception {
                 try {
                     // Create directories
-                    updateStatus("Creating directories...", 5);
+                    updateStatus("Creating directories...", 10);
                     createDirectories();
 
-                    // Download and extract Maven
-                    updateStatus("Downloading Maven...", 15);
-                    downloadAndExtract(MAVEN_URL, "tools/maven.zip", "tools/maven");
+                    // Download JSON library
+                    updateStatus("Downloading JSON library...", 30);
+                    downloadFile(JSON_LIB_URL, "lib/json.jar");
 
-                    // Download and extract JavaFX SDK
-                    updateStatus("Downloading JavaFX SDK...", 35);
-                    downloadAndExtract(JAVAFX_SDK_URL, "tools/javafx.zip", "tools/javafx");
+                    // Download and compile dashboard
+                    updateStatus("Downloading Dashboard...", 60);
+                    downloadFile(DASHBOARD_URL, "src/DJA.java");
 
-                    // Create pom.xml
-                    updateStatus("Creating Maven configuration...", 60);
-                    createPomXml();
+                    // Compile
+                    updateStatus("Compiling...", 80);
+                    compile();
 
-                    // Download dashboard source
-                    updateStatus("Downloading Dashboard...", 75);
-                    downloadDashboard();
-
-                    // Build project
-                    updateStatus("Building project...", 85);
-                    buildProject();
-
-                    // Cleanup
-                    updateStatus("Cleaning up...", 95);
+                    // Create shortcut and cleanup
+                    updateStatus("Creating shortcut...", 90);
+                    createShortcut();
                     cleanup();
 
                     updateStatus("Installation complete!", 100);
                     JOptionPane.showMessageDialog(null, "Installation completed successfully!");
-                    launchDashboard();
                     System.exit(0);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -85,41 +111,14 @@ public class Installer extends JFrame {
         SwingUtilities.invokeLater(() -> {
             statusLabel.setText(status);
             progressBar.setValue(progress);
+            // Add animation effect
+            progressBar.setString(progress + "%");
         });
     }
 
     private void createDirectories() {
-        createDir("tools");
-        createDir("src/main/java");
-    }
-
-    private void createDir(String path) {
-        new File(path).mkdirs();
-    }
-
-    private void downloadAndExtract(String url, String saveAs, String extractTo) throws Exception {
-        // Download
-        downloadFile(url, saveAs);
-
-        // Extract
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(saveAs))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                File file = new File(extractTo, entry.getName());
-                if (entry.isDirectory()) {
-                    file.mkdirs();
-                } else {
-                    file.getParentFile().mkdirs();
-                    try (FileOutputStream fos = new FileOutputStream(file)) {
-                        byte[] buffer = new byte[1024];
-                        int len;
-                        while ((len = zis.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                    }
-                }
-            }
-        }
+        new File("lib").mkdirs();
+        new File("src").mkdirs();
     }
 
     private void downloadFile(String url, String saveAs) throws Exception {
@@ -133,62 +132,59 @@ public class Installer extends JFrame {
         }
     }
 
-    private void createPomXml() throws IOException {
-        String pomContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
-                "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
-                "    <modelVersion>4.0.0</modelVersion>\n" +
-                "    <groupId>com.drage</groupId>\n" +
-                "    <artifactId>dja</artifactId>\n" +
-                "    <version>1.0-SNAPSHOT</version>\n" +
-                "    <properties>\n" +
-                "        <maven.compiler.source>11</maven.compiler.source>\n" +
-                "        <maven.compiler.target>11</maven.compiler.target>\n" +
-                "        <javafx.version>17.0.2</javafx.version>\n" +
-                "    </properties>\n" +
-                "    <dependencies>\n" +
-                "        <dependency>\n" +
-                "            <groupId>org.openjfx</groupId>\n" +
-                "            <artifactId>javafx-controls</artifactId>\n" +
-                "            <version>${javafx.version}</version>\n" +
-                "        </dependency>\n" +
-                "        <dependency>\n" +
-                "            <groupId>org.json</groupId>\n" +
-                "            <artifactId>json</artifactId>\n" +
-                "            <version>20231013</version>\n" +
-                "        </dependency>\n" +
-                "    </dependencies>\n" +
-                "</project>";
-        Files.write(Paths.get("pom.xml"), pomContent.getBytes());
-    }
-
-    private void downloadDashboard() throws Exception {
-        downloadFile(DASHBOARD_URL, "src/main/java/DJA.java");
-    }
-
-    private void buildProject() throws Exception {
-        String mvnCmd = System.getProperty("os.name").toLowerCase().contains("windows") 
-            ? "tools/maven/bin/mvn.cmd" 
-            : "tools/maven/bin/mvn";
-        
-        ProcessBuilder pb = new ProcessBuilder(mvnCmd, "clean", "package");
-        pb.inheritIO();
+    private void compile() throws Exception {
+        ProcessBuilder pb = new ProcessBuilder(
+            "javac", 
+            "-cp", "lib/json.jar", 
+            "src/DJA.java"
+        );
         Process p = pb.start();
         p.waitFor();
     }
 
     private void cleanup() {
-        new File("tools/maven.zip").delete();
-        new File("tools/javafx.zip").delete();
+        // Delete the source file after compilation
+        new File("src/DJA.java").delete();
     }
 
-    private void launchDashboard() throws Exception {
-        ProcessBuilder pb = new ProcessBuilder("java", 
-            "--module-path", "tools/javafx/lib", 
-            "--add-modules", "javafx.controls,javafx.fxml",
-            "-jar", "target/dja-1.0-SNAPSHOT.jar");
-        pb.start();
+    private void createShortcut() throws Exception {
+        String os = System.getProperty("os.name").toLowerCase();
+        String currentDir = new File(".").getAbsolutePath().replace("\\.", "");
+        
+        if (os.contains("windows")) {
+            // Create Windows .bat file in current directory
+            String batchContent = "@echo off\n" +
+                "cd \"" + currentDir + "\"\n" +
+                "java -cp \"src;lib/json.jar\" DJA";
+            
+            File batchFile = new File("DRAGE Java Apps.bat");
+            try (FileOutputStream fos = new FileOutputStream(batchFile)) {
+                fos.write(batchContent.getBytes());
+            }
+            
+            JOptionPane.showMessageDialog(null, 
+                "Launcher created: " + batchFile.getAbsolutePath() + "\n" +
+                "You can move it to your desktop or create a shortcut to it.",
+                "Installation Complete",
+                JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            // Create Unix/Linux/Mac launcher script
+            String shellContent = "#!/bin/bash\n" +
+                "cd \"" + currentDir + "\"\n" +
+                "java -cp \"src:lib/json.jar\" DJA";
+            
+            File shellFile = new File("DRAGE Java Apps");
+            try (FileOutputStream fos = new FileOutputStream(shellFile)) {
+                fos.write(shellContent.getBytes());
+                shellFile.setExecutable(true);
+            }
+            
+            JOptionPane.showMessageDialog(null, 
+                "Launcher created: " + shellFile.getAbsolutePath() + "\n" +
+                "You can move it to your desktop or create a shortcut to it.",
+                "Installation Complete",
+                JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     public static void main(String[] args) {
