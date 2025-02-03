@@ -9,22 +9,31 @@ public class DJA extends JFrame {
     private static final String MARKETPLACE_URL = "https://raw.githubusercontent.com/DRAGEno01/DRAGE-Java-Apps/main/code/apps.json";
     private JPanel installedAppsPanel;
     private JPanel marketplacePanel;
+    private Color primaryColor = new Color(25, 118, 210);
+    private Color accentColor = new Color(66, 165, 245);
+    private Color backgroundColor = new Color(245, 245, 245);
+    private Font titleFont = new Font("Segoe UI", Font.BOLD, 24);
+    private Font headerFont = new Font("Segoe UI", Font.BOLD, 18);
+    private Font normalFont = new Font("Segoe UI", Font.PLAIN, 14);
 
     public DJA() {
         setTitle("DRAGE Java Apps");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600);
+        setSize(1000, 700);
         setLocationRelativeTo(null);
+        setMinimumSize(new Dimension(800, 600));
 
         // Set modern look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            UIManager.put("Button.arc", 10);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Create main layout
-        setLayout(new BorderLayout());
+        // Main layout
+        setLayout(new BorderLayout(0, 0));
+        getContentPane().setBackground(backgroundColor);
 
         // Create header
         JPanel header = createHeader();
@@ -32,22 +41,28 @@ public class DJA extends JFrame {
 
         // Create main content
         JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(headerFont);
+        tabbedPane.setBackground(Color.WHITE);
         
         // Installed Apps Panel
-        installedAppsPanel = new JPanel(new GridLayout(0, 2, 10, 10));
-        installedAppsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        installedAppsPanel = new JPanel(new GridBagLayout());
+        installedAppsPanel.setBackground(Color.WHITE);
         JScrollPane installedScroll = new JScrollPane(installedAppsPanel);
+        installedScroll.setBorder(null);
+        installedScroll.getViewport().setBackground(Color.WHITE);
         tabbedPane.addTab("Installed Apps", installedScroll);
 
         // Marketplace Panel
-        marketplacePanel = new JPanel(new GridLayout(0, 2, 10, 10));
-        marketplacePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        marketplacePanel = new JPanel(new GridBagLayout());
+        marketplacePanel.setBackground(Color.WHITE);
         JScrollPane marketplaceScroll = new JScrollPane(marketplacePanel);
+        marketplaceScroll.setBorder(null);
+        marketplaceScroll.getViewport().setBackground(Color.WHITE);
         tabbedPane.addTab("Marketplace", marketplaceScroll);
 
         add(tabbedPane, BorderLayout.CENTER);
 
-        // Load marketplace apps
+        // Load apps
         loadMarketplaceApps();
         loadInstalledApps();
 
@@ -56,20 +71,34 @@ public class DJA extends JFrame {
 
     private JPanel createHeader() {
         JPanel header = new JPanel();
-        header.setBackground(new Color(33, 150, 243));
+        header.setBackground(primaryColor);
         header.setLayout(new BorderLayout());
-        header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        header.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
         JLabel title = new JLabel("DRAGE Java Apps");
-        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setFont(titleFont);
         title.setForeground(Color.WHITE);
         header.add(title, BorderLayout.WEST);
 
-        JButton refreshButton = new JButton("Refresh");
+        JButton refreshButton = createStyledButton("Refresh");
         refreshButton.addActionListener(e -> loadMarketplaceApps());
         header.add(refreshButton, BorderLayout.EAST);
 
         return header;
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(normalFont);
+        button.setForeground(primaryColor);
+        button.setBackground(Color.WHITE);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 1),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+        ));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
     }
 
     private void loadMarketplaceApps() {
@@ -105,33 +134,54 @@ public class DJA extends JFrame {
 
     private void addAppToMarketplace(JSONObject app) {
         JPanel appPanel = new JPanel();
-        appPanel.setLayout(new BorderLayout(10, 10));
+        appPanel.setLayout(new BorderLayout(15, 15));
+        appPanel.setBackground(Color.WHITE);
         appPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.GRAY),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(new Color(224, 224, 224), 1),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         // App info panel
         JPanel infoPanel = new JPanel(new GridLayout(4, 1, 5, 5));
+        infoPanel.setBackground(Color.WHITE);
+        
         JLabel nameLabel = new JLabel(app.getString("name"));
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        nameLabel.setFont(headerFont);
+        nameLabel.setForeground(primaryColor);
+        
         JLabel descLabel = new JLabel(app.getString("description"));
+        descLabel.setFont(normalFont);
+        
         JLabel versionLabel = new JLabel("Version: " + app.getString("version"));
+        versionLabel.setFont(normalFont);
+        
         JLabel authorLabel = new JLabel("By: " + app.getString("author"));
+        authorLabel.setFont(normalFont);
         
         infoPanel.add(nameLabel);
         infoPanel.add(descLabel);
         infoPanel.add(versionLabel);
         infoPanel.add(authorLabel);
 
-        // Install button
-        JButton installButton = new JButton("Install");
+        JButton installButton = createStyledButton("Install");
+        installButton.setBackground(accentColor);
+        installButton.setForeground(Color.WHITE);
         installButton.addActionListener(e -> installApp(app));
 
         appPanel.add(infoPanel, BorderLayout.CENTER);
         appPanel.add(installButton, BorderLayout.SOUTH);
 
-        marketplacePanel.add(appPanel);
+        // Add to marketplace with GridBagConstraints
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = GridBagConstraints.RELATIVE;
+        gbc.gridy = GridBagConstraints.RELATIVE;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 0.5;
+        gbc.insets = new Insets(10, 10, 10, 10);
+
+        marketplacePanel.add(appPanel, gbc);
+        marketplacePanel.revalidate();
+        marketplacePanel.repaint();
     }
 
     private void loadInstalledApps() {
